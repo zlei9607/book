@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>编辑</title>
+    <!-- 公共css -->
+    <th:block th:replace="common::css"/>
+</head>
+<body>
+<div style="padding: 20px;">
+    <form class="layui-form" action="">
+
+        <input type="hidden" id="id" name="id" th:value="${book.id}">
+        <input type="hidden" id="cover" name="cover" th:value="${book.cover}">
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">图书编号</label>
+            <div class="layui-input-block">
+                <input type="text" name="isbn" required lay-verify="required" autocomplete="off" class="layui-input"
+                       th:value="${book.isbn}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">图书名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" required lay-verify="required" autocomplete="off" class="layui-input"
+                       th:value="${book.name}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">封面</label>
+            <div class="layui-input-block">
+                <div class="layui-upload-drag" id="test1">
+                    <i class="layui-icon">&#xe67c;</i>
+                    <p>点击上传，或将文件拖拽到此处</p>
+                    <div id="uploadDemoView">
+                        <hr>
+                        <img th:src="${book.cover}" alt="封面" style="max-width: 196px" onerror="this.src='/img/logo.png'">
+                    </div>
+                </div>
+                <input type="text" id="coverUrl" class="layui-input" style="margin-top:10px"
+                       th:value="${book.cover}" placeholder="封面地址（可填网络图片）">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">作者</label>
+            <div class="layui-input-block">
+                <input type="text" name="author" required lay-verify="required" autocomplete="off" class="layui-input"
+                       th:value="${book.author}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">出版社</label>
+            <div class="layui-input-block">
+                <input type="text" name="press" required lay-verify="required" autocomplete="off" class="layui-input"
+                       th:value="${book.press}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">分类</label>
+            <div class="layui-input-block">
+                <select name="categoryId" required lay-verify="required">
+                    <option value=""></option>
+                    <option th:each="item : ${categoryList}" th:value="${item.id}" th:text="${item.name}"
+                            th:selected="${book.categoryId == item.id}"></option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">单价(分)</label>
+            <div class="layui-input-block">
+                <input type="number" name="price" class="layui-input" th:value="${book.price}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">馆藏数量</label>
+            <div class="layui-input-block">
+                <input type="number" name="count" class="layui-input" th:value="${book.count}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">可借数量</label>
+            <div class="layui-input-block">
+                <input type="number" name="availableCount" class="layui-input" th:value="${book.availableCount}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <select name="status">
+                    <option value="1" th:selected="${book.status == '1'}">上架</option>
+                    <option value="0" th:selected="${book.status == '0'}">下架</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">描述</label>
+            <div class="layui-input-block">
+                <textarea name="description" class="layui-textarea" th:text="${book.description}"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="formDemo">立即提交</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 公共js -->
+<th:block th:replace="common::js"/>
+<script>
+    layui.use(['upload', 'form'], function () {
+        var upload = layui.upload;
+        var form = layui.form;
+        var $ = layui.$;
+
+        form.render();
+
+        //监听提交
+        form.on('submit(formDemo)', function (data) {
+            // 优先用封面地址框；上传成功时会同步写入该框，避免旧地址覆盖新上传
+            data.field.cover = $.trim($('#coverUrl').val() || $('#cover').val() || '');
+            data.field.price = Number(data.field.price || 0);
+            data.field.count = Number(data.field.count || 0);
+            data.field.availableCount = Number(data.field.availableCount || 0);
+            $.ajax({
+                type: "PUT",
+                url: "/book/edit",
+                data: JSON.stringify(data.field),
+                contentType: "application/json",
+                success: function (res) {
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.fn.reload();
+                    parent.layer.close(index);
+                    parent.layer.msg('编辑成功');
+                }
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+        //拖拽上传
+        upload.render({
+            elem: '#test1',
+            url: '/file/upload',
+            accept: 'images',
+            acceptMime: 'image/*',
+            done: function (res) {
+                if (res.code !== 10000) {
+                    layer.msg(res.msg || '上传失败');
+                    return;
+                }
+                layer.msg('上传成功');
+                var url = res.data;
+                $('#uploadDemoView').removeClass('layui-hide').find('img').attr('src', url);
+                $('#cover').val(url);
+                $('#coverUrl').val(url);
+            },
+            error: function () {
+                layer.msg('上传失败，请重试');
+            }
+        });
+
+    });
+</script>
+</body>
+</html>

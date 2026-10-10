@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>新增</title>
+    <th:block th:replace="common::css"/>
+</head>
+<body>
+<div style="padding: 20px;">
+    <form class="layui-form">
+        <div class="layui-form-item">
+            <label class="layui-form-label">读者</label>
+            <div class="layui-input-block">
+                <select name="readerId" lay-verify="required" lay-search>
+                    <option value="">请选择读者</option>
+                    <option th:each="r : ${readers}" th:value="${r.id}"
+                            th:text="${r.name + '（' + r.cardNo + '）'}"></option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">图书</label>
+            <div class="layui-input-block">
+                <select name="bookId" lay-verify="required" lay-search>
+                    <option value="">请选择图书</option>
+                    <option th:each="b : ${books}" th:value="${b.id}"
+                            th:text="${b.name + '（可借' + b.availableCount + '）'}"></option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">借阅天数</label>
+            <div class="layui-input-block">
+                <input type="number" name="borrowDays" value="30" min="1" max="365"
+                       lay-verify="required|number" class="layui-input" placeholder="默认 30 天，可修改">
+                <div class="layui-form-mid layui-word-aux">默认 30 天，可按需调整；应还时间 = 借出当天 + 借阅天数</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="formDemo">确认借出</button>
+            </div>
+        </div>
+    </form>
+</div>
+<th:block th:replace="common::js"/>
+<script>
+    layui.use('form', function () {
+        var form = layui.form, $ = layui.$;
+        form.render();
+        form.on('submit(formDemo)', function (data) {
+            var days = Number(data.field.borrowDays);
+            if (!days || days < 1) {
+                layer.msg('请填写有效的归还天数');
+                return false;
+            }
+            $.ajax({
+                type: 'POST', url: '/borrow/manual',
+                data: JSON.stringify({
+                    readerId: Number(data.field.readerId),
+                    bookId: Number(data.field.bookId),
+                    borrowDays: days
+                }),
+                contentType: 'application/json',
+                success: function (res) {
+                    if (res.code !== 10000) { layer.msg(res.msg); return; }
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.fn.reload();
+                    parent.layer.close(index);
+                    parent.layer.msg('借出成功');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

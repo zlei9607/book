@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>编辑读者</title>
+    <th:block th:replace="common::css"/>
+</head>
+<body>
+<div style="padding: 20px;">
+    <form class="layui-form">
+        <input type="hidden" name="id" th:value="${reader.id}">
+        <div class="layui-form-item">
+            <label class="layui-form-label">借阅卡号</label>
+            <div class="layui-input-block">
+                <input type="text" name="cardNo" required lay-verify="required" class="layui-input" th:value="${reader.cardNo}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">姓名</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" required lay-verify="required" class="layui-input" th:value="${reader.name}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">手机号</label>
+            <div class="layui-input-block">
+                <input type="text" name="phone" class="layui-input" th:value="${reader.phone}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">性别</label>
+            <div class="layui-input-block">
+                <select name="gender">
+                    <option value="1" th:selected="${reader.gender == '1'}">男</option>
+                    <option value="0" th:selected="${reader.gender == '0'}">女</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">可借上限</label>
+            <div class="layui-input-block">
+                <input type="number" name="maxBorrow" class="layui-input" th:value="${reader.maxBorrow}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <select name="status">
+                    <option value="1" th:selected="${reader.status == '1'}">正常</option>
+                    <option value="0" th:selected="${reader.status == '0'}">冻结</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="formDemo">立即提交</button>
+            </div>
+        </div>
+    </form>
+</div>
+<th:block th:replace="common::js"/>
+<script>
+    layui.use('form', function () {
+        var form = layui.form, $ = layui.$;
+        form.render();
+        form.on('submit(formDemo)', function (data) {
+            $.ajax({
+                type: 'POST', url: '/reader/edit', data: JSON.stringify(data.field), contentType: 'application/json',
+                success: function (res) {
+                    if (res.code !== 10000) { layer.msg(res.msg); return; }
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.fn.reload();
+                    parent.layer.close(index);
+                    parent.layer.msg('修改成功');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

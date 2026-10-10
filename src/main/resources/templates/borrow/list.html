@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>借阅管理</title>
+    <th:block th:replace="common::css"/>
+    <style>
+        .layui-table-cell { height: auto; white-space: normal; }
+    </style>
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <div th:replace="common::header"></div>
+    <div th:replace="common::side"></div>
+    <div class="layui-body" style="padding: 20px;">
+        <div class="searchHelp layui-form">
+            <div class="layui-inline">
+                <input id="readerName" type="text" placeholder="读者姓名" class="layui-input">
+            </div>
+            <div class="layui-inline">
+                <input id="cardNo" type="text" placeholder="借阅卡号" class="layui-input">
+            </div>
+            <div class="layui-inline">
+                <input id="bookName" type="text" placeholder="图书名称" class="layui-input">
+            </div>
+            <div class="layui-inline">
+                <select id="status">
+                    <option value="">全部状态</option>
+                    <option value="0">借阅中</option>
+                    <option value="1">已归还</option>
+                    <option value="2">逾期</option>
+                </select>
+            </div>
+            <button type="button" class="layui-btn" id="search"><i class="layui-icon layui-icon-search"></i> 查询</button>
+        </div>
+        <table id="demo" lay-filter="test"></table>
+    </div>
+    <div th:replace="common::footer"></div>
+</div>
+<th:block th:replace="common::js"/>
+<script type="text/html" id="toolbarDemo">
+    <button type="button" class="layui-btn" lay-event="manual"><i class="layui-icon layui-icon-add-1"></i> 新增</button>
+</script>
+<script type="text/javascript" th:inline="none">
+    layui.use(['table', 'form', 'layer'], function () {
+        var table = layui.table, form = layui.form, $ = layui.$, layer = layui.layer;
+        form.render();
+
+        function statusHtml(s) {
+            if (s === '0') return '<span style="color:#FF5722;">借阅中</span>';
+            if (s === '1') return '<span style="color:#5FB878;">已归还</span>';
+            if (s === '2') return '<span style="color:#FF5722;">逾期</span>';
+            return s;
+        }
+
+        function fmtTime(t) {
+            if (!t) return '-';
+            if (typeof t === 'number') {
+                var d = new Date(t);
+                var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+                    + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+            }
+            return String(t).replace('T', ' ').replace(/\.\d{3}.*/, '').substring(0, 19);
+        }
+
+        var tableIns = table.render({
+            elem: '#demo',
+            url: '/borrow/page',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: [],
+            page: true,
+            cols: [[
+                {field: 'id', title: 'ID', width: 70},
+                {field: 'bookCover', title: '封面', width: 80, templet: function (d) {
+                    return d.bookCover ? '<img src="' + d.bookCover + '" style="height:50px" onerror="this.src=\'/img/logo.png\'">' : '';
+                }},
+                {field: 'bookName', title: '图书', minWidth: 140},
+                {field: 'readerName', title: '读者', width: 90},
+                {field: 'readerCardNo', title: '卡号', width: 120},
+                {field: 'borrowTime', title: '借出时间', width: 170, templet: function (d) { return fmtTime(d.borrowTime); }},
+                {field: 'dueTime', title: '应还时间', width: 170, templet: function (d) { return fmtTime(d.dueTime); }},
+                {field: 'returnTime', title: '归还时间', width: 170, templet: function (d) { return fmtTime(d.returnTime); }},
+                {field: 'status', title: '状态', width: 90, templet: function (d) { return statusHtml(d.status); }},
+                {fixed: 'right', title: '操作', width: 100, templet: function (d) {
+                    if (d.status === '0' || d.status === '2') {
+                        return '<button type="button" class="layui-btn layui-btn-normal layui-btn-sm" lay-event="returnBook">归还</button>';
+                    }
+                    return '';
+                }}
+            ]],
+            parseData: function (res) {
+                return {code: 0, msg: '', count: res.total, data: res.records};
+            }
+        });
+        window.fn = tableIns;
+
+        $('#search').on('click', function () {
+            tableIns.reload({
+                where: {
+                    readerName: $('#readerName').val(),
+                    cardNo: $('#cardNo').val(),
+                    bookName: $('#bookName').val(),
+                    status: $('#status').val()
+                },
+                page: {curr: 1}
+            });
+        });
+
+        table.on('toolbar(test)', function (obj) {
+            if (obj.event === 'manual') {
+                layer.open({type: 2, title: '新增', area: ['520px', '420px'], content: '/borrow/toManual'});
+            }
+        });
+
+        table.on('tool(test)', function (obj) {
+            if (obj.event === 'returnBook') {
+                layer.confirm('确认办理归还？', function (index) {
+                    $.get('/borrow/return/' + obj.data.id, function (res) {
+                        if (res.code !== 10000) {
+                            layer.msg(res.msg);
+                            return;
+                        }
+                        tableIns.reload();
+                        layer.close(index);
+                        layer.msg('归还成功');
+                    });
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

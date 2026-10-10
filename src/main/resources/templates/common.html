@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>图书借阅管理</title>
+</head>
+<body>
+
+<th:block th:fragment="css">
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}"/>
+    <style>
+        .layui-layout-admin .layui-body {
+            bottom: 44px !important;
+            padding-bottom: 20px !important;
+            overflow: auto;
+        }
+        .layui-layout-admin .layui-footer {
+            z-index: 1000;
+        }
+    </style>
+</th:block>
+
+<th:block th:fragment="js">
+    <script th:src="@{/layui/layui.js}"></script>
+</th:block>
+
+<!-- 页头 -->
+<div class="layui-header" th:fragment="header">
+    <div class="layui-logo layui-hide-xs layui-bg-black">
+        <img th:src="@{/img/logo-white.png(v=6)}" style="width: 38px;height: 38px;margin-right: 8px;"/>
+        图书借阅管理
+    </div>
+    <ul class="layui-nav layui-layout-right">
+        <li class="layui-nav-item layui-hide layui-show-md-inline-block">
+            <a href="javascript:;">
+                <img th:src="@{/img/avatar.jpg}"
+                     class="layui-nav-img">
+                [[${session.loginUser.username}]]
+            </a>
+            <dl class="layui-nav-child">
+                <dd><a th:href="@{/logout}">退出登录</a></dd>
+            </dl>
+        </li>
+    </ul>
+</div>
+
+<!-- 左侧导航区域 -->
+<div class="layui-side layui-bg-black" th:fragment="side">
+    <div class="layui-side-scroll">
+        <ul class="layui-nav layui-nav-tree">
+            <li th:class="${#request.getRequestURI() == '/index' ? 'layui-nav-item layui-nav-itemed layui-this' : 'layui-nav-item'}">
+                <a th:href="@{/index}">首页</a>
+            </li>
+            <li th:class="${#strings.contains(#request.getRequestURI(), '/book') ? 'layui-nav-item layui-nav-itemed layui-this' : 'layui-nav-item'}">
+                <a th:href="@{/book/list}">图书管理</a>
+            </li>
+            <li th:class="${#strings.contains(#request.getRequestURI(), '/category') ? 'layui-nav-item layui-nav-itemed layui-this' : 'layui-nav-item'}">
+                <a th:href="@{/category/list}">分类管理</a>
+            </li>
+            <li th:class="${#strings.contains(#request.getRequestURI(), '/reader') ? 'layui-nav-item layui-nav-itemed layui-this' : 'layui-nav-item'}">
+                <a th:href="@{/reader/list}">读者管理</a>
+            </li>
+            <li th:class="${#strings.contains(#request.getRequestURI(), '/borrow') ? 'layui-nav-item layui-nav-itemed layui-this' : 'layui-nav-item'}">
+                <a th:href="@{/borrow/list}">借阅管理</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+
+<div class="layui-footer" th:fragment="footer">
+    <!-- 底部固定区域 -->
+    图书借阅管理系统 · 管理端
+</div>
+
+</body>
+</html>

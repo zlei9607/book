@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>新增</title>
+    <!-- 公共css -->
+    <th:block th:replace="common::css"/>
+</head>
+<body>
+<div style="padding: 20px;">
+    <form class="layui-form" action="">
+
+        <input type="hidden" id="cover" name="cover">
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">图书编号</label>
+            <div class="layui-input-block">
+                <input type="text" name="isbn" required lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">图书名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" required lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">封面</label>
+            <div class="layui-input-block">
+                <div class="layui-upload-drag" id="test1">
+                    <i class="layui-icon">&#xe67c;</i>
+                    <p>点击上传，或将文件拖拽到此处</p>
+                    <div class="layui-hide" id="uploadDemoView">
+                        <hr>
+                        <img src="" alt="上传成功后渲染" style="max-width: 196px">
+                    </div>
+                </div>
+                <input type="text" id="coverUrl" placeholder="或粘贴网络封面地址（如 Open Library）" class="layui-input" style="margin-top:10px">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">作者</label>
+            <div class="layui-input-block">
+                <input type="text" name="author" required lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">出版社</label>
+            <div class="layui-input-block">
+                <input type="text" name="press" required lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">分类</label>
+            <div class="layui-input-block">
+                <select name="categoryId" required lay-verify="required">
+                    <option value=""></option>
+                    <option th:each="item : ${categoryList}" th:value="${item.id}" th:text="${item.name}"></option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">单价(分)</label>
+            <div class="layui-input-block">
+                <input type="number" name="price" class="layui-input" value="0">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">馆藏数量</label>
+            <div class="layui-input-block">
+                <input type="number" name="count" class="layui-input" value="10" lay-verify="required">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">可借数量</label>
+            <div class="layui-input-block">
+                <input type="number" name="availableCount" class="layui-input" value="10" placeholder="默认与馆藏相同">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <select name="status">
+                    <option value="1">上架</option>
+                    <option value="0">下架</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">描述</label>
+            <div class="layui-input-block">
+                <textarea name="description" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="formDemo">立即提交</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 公共js -->
+<th:block th:replace="common::js"/>
+<script>
+    layui.use(['upload', 'form'], function () {
+        var upload = layui.upload;
+        var form = layui.form;
+        var $ = layui.$;
+
+        form.render();
+
+        //监听提交
+        form.on('submit(formDemo)', function (data) {
+            // 优先用封面地址框；上传成功时会同步写入该框
+            data.field.cover = $.trim($('#coverUrl').val() || $('#cover').val() || '');
+            data.field.price = Number(data.field.price || 0);
+            data.field.count = Number(data.field.count || 1);
+            data.field.availableCount = Number(data.field.availableCount || data.field.count);
+            $.ajax({
+                type: "POST",
+                url: "/book/add",
+                data: JSON.stringify(data.field),
+                contentType: "application/json",
+                success: function (res) {
+                    // 列表刷新
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.fn.reload();
+                    parent.layer.close(index);
+                    parent.layer.msg('新增成功');
+                }
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+        //拖拽上传
+        upload.render({
+            elem: '#test1',
+            url: '/file/upload',
+            accept: 'images',
+            acceptMime: 'image/*',
+            done: function (res) {
+                if (res.code !== 10000) {
+                    layer.msg(res.msg || '上传失败');
+                    return;
+                }
+                layer.msg('上传成功');
+                var url = res.data;
+                $('#uploadDemoView').removeClass('layui-hide').find('img').attr('src', url);
+                $('#cover').val(url);
+                $('#coverUrl').val(url);
+            },
+            error: function () {
+                layer.msg('上传失败，请重试');
+            }
+        });
+
+    });
+</script>
+</body>
+</html>

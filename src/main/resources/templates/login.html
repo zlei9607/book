@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>登录</title>
+    <!-- 公共css -->
+    <th:block th:replace="common::css"/>
+    <style>
+        body {
+            background-color: #f2f2f2;
+        }
+
+        .login-form {
+            width: 360px;
+            margin: 100px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        .title {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .title img {
+            width: 46px;
+            height: 46px;
+            margin-right: 12px;
+        }
+
+        .layui-form-item {
+            margin-bottom: 20px;
+        }
+
+        .layui-input-block {
+            margin-left: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+<form class="layui-form login-form">
+    <div class="title">
+        <img th:src="@{/img/logo.png(v=5)}"/>
+        <h2>图书借阅管理</h2>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <input type="text" name="username" value="admin" required lay-verify="required" placeholder="用户名"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <input type="password" name="password" value="111111" required lay-verify="required" placeholder="密码"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <button class="layui-btn layui-btn-fluid login-btn" lay-submit lay-filter="login">登录</button>
+    </div>
+</form>
+
+<!-- 公共js -->
+<th:block th:replace="common::js"/>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form,
+            $ = layui.$;
+
+        // 监听提交事件
+        form.on('submit(login)', function (data) {
+            $.ajax({
+                type: "POST",
+                url: "/toLogin",
+                data: JSON.stringify(data.field),
+                contentType: "application/json",
+                success: function (res) {
+                    if (res.code === 10000) {
+                        layer.msg('登录成功');
+                        window.location.href = "/index";
+                    } else {
+                        layer.msg(res.msg);
+                    }
+                }
+            });
+            return false; // 阻止表单跳转
+        });
+    });
+</script>
+</body>
+</html>

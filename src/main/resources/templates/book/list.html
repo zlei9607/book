@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>图书管理</title>
+    <!-- 公共css -->
+    <th:block th:replace="common::css"/>
+    <style>
+        .layui-table-cell {
+            text-align: center;
+            height: auto;
+            white-space: normal;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+
+    <!-- 头部 -->
+    <div th:replace="common::header"></div>
+
+    <!-- 左侧菜单栏 -->
+    <div th:replace="common::side"></div>
+
+    <!-- 内容主体区域 -->
+    <div class="layui-body" style="padding: 20px;">
+
+        <div class="searchHelp layui-form" lay-filter="test2">
+            <div class="layui-inline">
+                <div class="layui-input-inline">
+                    <input name="name" id="name" type="text" placeholder="图书名称" autocomplete="off"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <div class="layui-input-inline">
+                    <select name="categoryId" id="categoryId">
+                        <option value="">选择分类</option>
+                        <option th:each="item : ${categoryList}" th:value="${item.id}" th:text="${item.name}"></option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="layui-btn" data-type="reload" id="search">
+                <i class="layui-icon layui-icon-search"></i> 查询
+            </button>
+        </div>
+
+        <table id="demo" lay-filter="test"></table>
+
+    </div>
+
+    <!-- 底部 -->
+    <div th:replace="common::footer"></div>
+</div>
+
+<!-- 公共js -->
+<th:block th:replace="common::js"/>
+
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button type="button" class="layui-btn" lay-event="add">
+            <i class="layui-icon layui-icon-add-1"></i> 新增
+        </button>
+        <button type="button" class="layui-btn layui-btn-danger" lay-event="batchDel">
+            <i class="layui-icon layui-icon-delete"></i> 批量删除
+        </button>
+    </div>
+</script>
+
+<script type="text/html" id="barDemo">
+    <div class="layui-btn-container">
+        <button type="button" class="layui-btn layui-btn-normal layui-btn-sm" lay-event="edit">
+            <i class="layui-icon layui-icon-edit"></i>
+        </button>
+        <button type="button" class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">
+            <i class="layui-icon layui-icon-delete"></i>
+        </button>
+    </div>
+</script>
+
+<script type="text/javascript" th:inline="none">
+    var fn = {};
+
+    layui.use('table', function () {
+        var table = layui.table;
+        var $ = layui.$;
+
+        //第一个实例
+        table.render({
+            elem: '#demo',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: [],
+            url: '/book/page', //数据接口
+            page: true, //开启分页
+            autoSort: false, // 禁用前端自动排序
+            cols: [[ //表头
+                {type: 'checkbox', width: 80},
+                {field: 'id', width: 80, title: 'ID', sort: true},
+                {
+                    field: 'cover',
+                    title: '封面',
+                    width: 130,
+                    align: 'center',
+                    templet: function (d) {
+                        return '<img src="' + d.cover + '" style="width:80px;height:100px;object-fit:cover;" onerror="this.src=\'/img/logo.png\'"/>'
+                    }
+                },
+                {field: 'isbn', width: 130, title: '图书编号', sort: true},
+                {field: 'name', width: 180, title: '图书名称'},
+                {field: 'categoryName', width: 100, title: '分类'},
+                {field: 'author', width: 80, title: '作者'},
+                {field: 'press', width: 180, title: '出版社'},
+                {field: 'description', width: 200, title: '描述'},
+                {field: 'price', width: 100, title: '单价(分)'},
+                {field: 'count', width: 90, title: '馆藏', sort: true},
+                {field: 'availableCount', width: 90, title: '可借'},
+                {field: 'status', width: 80, title: '状态', templet: function (d) {
+                    return d.status === '1'
+                        ? '<span style="color:#5FB878;">上架</span>'
+                        : '<span style="color:#FF5722;">下架</span>';
+                }},
+                {title: '操作', width: 150, align: 'center', toolbar: '#barDemo'}
+
+            ]],
+            parseData: function (res) { //res 即为原始返回的数据
+                return {
+                    "code": 0, //解析接口状态
+                    "msg": "", //解析提示文本
+                    "count": res.total, //解析数据长度
+                    "data": res.records //解析数据列表
+                };
+            }
+        });
+        //触发事件
+        table.on('toolbar(test)', function (obj) {
+            var layEvent = obj.event;
+            if (layEvent === 'add') {
+                layer.open({
+                    type: 2,
+                    title: '新增',
+                    area: ['60%', '95%'],
+                    shadeClose: true, //点击遮罩关闭
+                    content: '/book/toAdd'
+                });
+            } else if (layEvent === 'batchDel') {
+                var checkStatus = table.checkStatus(obj.config.id);
+                if (checkStatus.data.length === 0) {
+                    layer.msg('请选择数据');
+                    return;
+                }
+                layer.confirm('真的删除选中行么', function (index) {
+                    let ids = Array.from(checkStatus.data, ({id}) => id);
+                    $.ajax({
+                        type: "DELETE",
+                        url: "/book/batchDel",
+                        contentType: "application/json",
+                        data: JSON.stringify(ids),
+                        success: function (res) {
+                            table.reload(obj.config.id)
+                            layer.close(index);
+                            layer.msg('删除成功');
+                        }
+                    });
+                });
+            }
+        });
+
+        table.on('tool(test)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'edit') {
+                layer.open({
+                    type: 2,
+                    title: '编辑',
+                    area: ['60%', '95%'],
+                    shadeClose: true, //点击遮罩关闭
+                    content: '/book/toEdit/' + data.id
+                });
+            } else if (layEvent === 'del') {
+                layer.confirm('真的删除行么', function (index) {
+                    //向服务端发送删除指令
+                    $.ajax({
+                        type: "DELETE",
+                        url: "/book/del/" + data.id,
+                        contentType: "application/json",
+                        success: function (res) {
+                            table.reload("demo")
+                            // obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                            layer.close(index);
+                            layer.msg('删除成功');
+                        }
+                    });
+                });
+            }
+        });
+
+        table.on('sort(test)', function(obj){ // 注：sort 事件名称，test 为 lay-filter="*" 的值
+            // 获取排序字段和排序类型
+            var field = obj.field; // 排序字段名称
+            var type = obj.type; // 排序类型：desc（降序）、asc（升序）、null（无排序）
+
+            // 执行排序请求
+            table.reload('demo', {
+                initSort: obj // 记录排序参数
+                ,where: { // 请求参数（注：这里按需求传递）
+                    sort: field
+                    ,order: type
+                }
+            });
+        });
+
+        /**
+         * 重载数据表格
+         */
+        fn.reload = function () {
+            var name = $("#name").val() || "";
+            var categoryId = $("#categoryId option:selected").val() || "";
+            //执行重载
+            table.reload('demo', {
+                where: {
+                    name: name,
+                    categoryId: categoryId
+                }
+            });
+
+        }
+
+        /**
+         * 条件查询
+         */
+        var active = {
+            reload: function () {
+                var name = $("#name").val() || "";
+                var categoryId = $("#categoryId option:selected").val() || "";
+                table.reload('demo', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    },
+                    where: {
+                        name: name,
+                        categoryId: categoryId
+                    }
+                });
+            }
+        };
+        $('.searchHelp .layui-btn').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+    });
+</script>
+</body>
+</html>

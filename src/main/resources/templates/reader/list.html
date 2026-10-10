@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>读者管理</title>
+    <th:block th:replace="common::css"/>
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <div th:replace="common::header"></div>
+    <div th:replace="common::side"></div>
+    <div class="layui-body" style="padding: 20px;">
+        <div class="searchHelp layui-form">
+            <div class="layui-inline">
+                <input name="name" id="name" type="text" placeholder="姓名" class="layui-input">
+            </div>
+            <div class="layui-inline">
+                <input name="cardNo" id="cardNo" type="text" placeholder="借阅卡号" class="layui-input">
+            </div>
+            <div class="layui-inline">
+                <select id="status">
+                    <option value="">状态</option>
+                    <option value="1">正常</option>
+                    <option value="0">冻结</option>
+                </select>
+            </div>
+            <button type="button" class="layui-btn" id="search">
+                <i class="layui-icon layui-icon-search"></i> 查询
+            </button>
+        </div>
+        <table id="demo" lay-filter="test"></table>
+    </div>
+    <div th:replace="common::footer"></div>
+</div>
+<th:block th:replace="common::js"/>
+<script type="text/html" id="toolbarDemo">
+    <button type="button" class="layui-btn" lay-event="add"><i class="layui-icon layui-icon-add-1"></i> 新增</button>
+    <button type="button" class="layui-btn layui-btn-danger" lay-event="batchDel"><i class="layui-icon layui-icon-delete"></i> 批量删除</button>
+</script>
+<script type="text/html" id="barDemo">
+    <button type="button" class="layui-btn layui-btn-normal layui-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button>
+    <button type="button" class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del"><i class="layui-icon layui-icon-delete"></i></button>
+</script>
+<script type="text/javascript" th:inline="none">
+    layui.use(['table', 'form', 'layer'], function () {
+        var table = layui.table, form = layui.form, $ = layui.$, layer = layui.layer;
+        form.render();
+        var tableIns = table.render({
+            elem: '#demo',
+            url: '/reader/page',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: [],
+            page: true,
+            cols: [[
+                {type: 'checkbox'},
+                {field: 'id', title: 'ID', width: 80, sort: true},
+                {field: 'cardNo', title: '借阅卡号', width: 140},
+                {field: 'name', title: '姓名', width: 100},
+                {field: 'phone', title: '手机号', width: 130},
+                {field: 'gender', title: '性别', width: 80, templet: function (d) { return d.gender === '1' ? '男' : '女'; }},
+                {field: 'maxBorrow', title: '可借上限', width: 100},
+                {field: 'status', title: '状态', width: 90, templet: function (d) {
+                    return d.status === '1'
+                        ? '<span style="color:#5FB878;">正常</span>'
+                        : '<span style="color:#FF5722;">冻结</span>';
+                }},
+                {field: 'createTime', title: '办卡时间', width: 170},
+                {fixed: 'right', title: '操作', toolbar: '#barDemo', width: 180}
+            ]],
+            parseData: function (res) {
+                return {code: 0, msg: '', count: res.total, data: res.records};
+            }
+        });
+        window.fn = tableIns;
+        $('#search').on('click', function () {
+            tableIns.reload({
+                where: {name: $('#name').val(), cardNo: $('#cardNo').val(), status: $('#status').val()},
+                page: {curr: 1}
+            });
+        });
+        table.on('toolbar(test)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({type: 2, title: '新增读者', area: ['560px', '520px'], content: '/reader/toAdd'});
+            } else if (obj.event === 'batchDel') {
+                var checkStatus = table.checkStatus('demo');
+                if (!checkStatus.data.length) {
+                    layer.msg('请选择数据');
+                    return;
+                }
+                var ids = checkStatus.data.map(function (i) { return i.id; });
+                layer.confirm('确认删除？', function (index) {
+                    $.ajax({
+                        type: 'POST', url: '/reader/batchDel',
+                        data: JSON.stringify(ids), contentType: 'application/json',
+                        success: function () {
+                            tableIns.reload();
+                            layer.close(index);
+                            layer.msg('删除成功');
+                        }
+                    });
+                });
+            }
+        });
+        table.on('tool(test)', function (obj) {
+            if (obj.event === 'edit') {
+                layer.open({type: 2, title: '编辑读者', area: ['560px', '520px'], content: '/reader/toEdit/' + obj.data.id});
+            } else if (obj.event === 'del') {
+                layer.confirm('确认删除？', function (index) {
+                    $.get('/reader/del/' + obj.data.id, function () {
+                        obj.del();
+                        layer.close(index);
+                        layer.msg('删除成功');
+                    });
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>
